@@ -1,0 +1,107 @@
+Test logique:
+
+1/ 54 48 42 36 30 24 ..
+
+2/ A B D G K P
+
+3/ 1/D 4/H 8/M 13/S 19/Z
+
+4/ 3/6 4/7 6/10 9/15 13/22
+
+5/ 3/4 5/8 9/32 15/192 23/1536
+
+algo:
+1/ Debut
+  val pos: entier
+  mot : chaine
+  voyelle =  "aeouiy"
+  
+
+ecrire['afficher le mot']
+pour i de 1 a mot.length faire
+mot[i] = miniscule mot[i]
+fin pour
+pour i de 1 à mot.length faire	
+ lite mot[i]
+ si mot[i] = voyelle
+  supprimer mot[i]
+  sinon i = i+1
+  fin si
+ fin si
+fin pour
+pour i de 1 à mot.length faire
+pos = i
+
+2/
+
+
+Debut
+var n, i, j, k :entier
+var t [1..n]:tab
+var s []:tab
+var nom: chaine
+var score: entier
+
+
+pour i de 1 à n faire
+j = 1
+k = 1 
+ecrire('saisir le nom')
+lire nom
+tn[j] = nom
+j = j+1
+ecrire('saisir un score')
+lire score
+tn[j] = score
+s[k] = score
+k = k+1
+fin pour
+fonction tri(nom)
+temp: entier
+
+pour i de 1 à s.length faire
+pour j de i a s.length faire
+si t[i] < t[j]
+temp = t[i]
+t[i]= t[j]
+t[j] = temp
+fin si
+fin pour 
+fin pour
+procedure score
+pour i de 1 à s.length faire
+pour j de 1 à n faire 
+si s[i] = tn[2]
+ecrire('1ere place:' tn[1], tn[2] )
+fin si
+fin pour
+fin pour
+fin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
