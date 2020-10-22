@@ -73,7 +73,7 @@ const limiter = rateLimit({
 
 
 
-router.put('/:id', function (req, res) {
+router.put('/:id', limiter, function (req, res) {
     var totalChoices = 0, noChoices = 0, yesChoices = 0, yesPercentage = 0, noPercentage = 0
     Subject.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (subject) {
         let user = await User.findById(subject.userId)
