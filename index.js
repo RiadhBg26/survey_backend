@@ -46,39 +46,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/user',  userRouter);
 app.use('/api/survey',  subjectRouter);
 
-app.user
 app.listen(process.env.port || 3000, function() {
     console.log('listening to port 3000 ...');
 })
 
 // "C:\Program Files\MongoDB\Server\4.2\bin\mongod.exe" --dbpath="c:\data\db"
 
-
-
-
-
-
-
-app.get('/premium-resource', function(req, res, next) {
-    passport.authenticate('bearer', function(err, user) {
-      if (user){
-        if (user.role === 'premium'){
-          return res.send(200,{userContent:'you are a premium user'});
-        }else{
-          return res.send(403,{
-            'status': 403,
-            'code': 1, // custom code that makes sense for your application
-            'message': 'You are not a premium user',
-            'moreInfo': 'https://myawesomeapi.io/upgrade'
-          });
-        }
-      }else{
-        return res.send(401,{
-          'status': 401,
-          'code': 2, // custom code that makes sense for your application
-          'message': 'You are not authenticated.',
-          'moreInfo': 'https://myawesomeapi.io/docs'
-        });
-      }
-    })(req, res, next);
-  });

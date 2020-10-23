@@ -78,6 +78,8 @@ router.put('/:id', limiter, function (req, res) {
     Subject.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (subject) {
         let user = await User.findById(subject.userId)
         // console.log('this: ', user._id);
+        subject.choice.push(req.body.choice)
+        console.log(subject.choice);
         totalChoices = subject.choice.length
         if (yesChoices !== 0) {
             yesChoices = 0
@@ -94,8 +96,6 @@ router.put('/:id', limiter, function (req, res) {
         }
         yesPercentage = (yesChoices / totalChoices) *100
         noPercentage = (noChoices / totalChoices) *100
-        console.log(subject.choice);
-        subject.choice.push(req.body.choice)
         subject.yesPercentage = yesPercentage
         subject.noPercentage = noPercentage
         // console.log(subject);
