@@ -3,7 +3,8 @@ const router = express.Router();
 const cron = require('node-cron');
 const rateLimit = require("express-rate-limit");
 const Subject = require('../models/subjectModel');
-const User = require('../models/userModel')
+const User = require('../models/userModel');
+const { use } = require('passport');
 
 router.get('/', function (req, res) {
     Subject.find({})
@@ -23,26 +24,26 @@ router.get('/:id', function (req, res) {
     // console.log('GET request');
     id = req.params.id;
     Subject.findOne({ _id: id })
-      .select(' -__v')
-      // .populate('specialty', {'_id ': 0})
-    //   .populate({ path: 'userId', model: 'user', select: '-__v' })
-      .exec(function (err, subject) {
-        if (subject) {
-            // console.log('subject => ',subject);
-          res.status(200).send({
-            id: subject._id,
-            title: subject.title,
-            description: subject.description,
-            choices: subject.choices,
-            yesPercentage: subject.yesPercentage,
-            noPercentage: subject.noPercentage
-          });
-        } else {
-          res.json({ message: `No subject found with id : ${id}` })
-        //   console.log('bad');
-        }
-      });
-  });
+        .select(' -__v')
+        // .populate('specialty', {'_id ': 0})
+        //   .populate({ path: 'userId', model: 'user', select: '-__v' })
+        .exec(function (err, subject) {
+            if (subject) {
+                // console.log('subject => ',subject);
+                res.status(200).send({
+                    id: subject._id,
+                    title: subject.title,
+                    description: subject.description,
+                    choices: subject.choices,
+                    yesPercentage: subject.yesPercentage,
+                    noPercentage: subject.noPercentage
+                });
+            } else {
+                res.json({ message: `No subject found with id : ${id}` })
+                //   console.log('bad');
+            }
+        });
+});
 
 router.post('', function (req, res) {
     Subject.create(req.body).then(async function (subject) {
@@ -73,37 +74,96 @@ const limiter = rateLimit({
 
 
 
-router.put('/:id', limiter, function (req, res) {
+router.put('/:id', function (req, res) {
     var totalChoices = 0, noChoices = 0, yesChoices = 0, yesPercentage = 0, noPercentage = 0
+    var found = false
     Subject.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (subject) {
         let user = await User.findById(subject.userId)
-        // console.log('this: ', user._id);
-        subject.choice.push(req.body.choice)
-        console.log(subject.choice);
-        totalChoices = subject.choice.length
-        if (yesChoices !== 0) {
-            yesChoices = 0
-        }
-        for (let i = 0; i < totalChoices; i++) {
-            if (subject.choice[i] == 'yes') {
-                yesChoices ++
-                console.log('yes => ',yesChoices);
+        answeredSubjects = user.answeredSubjects
+        // console.log(answeredSubjects.length);
+        if (answeredSubjects.length !== 0) {
+            console.log('one');
+            for (let i = 0; i < answeredSubjects.length; i++) {
+                if (answeredSubjects[i] == req.params.id) {
+                    console.log(answeredSubjects[i], req.params.id);
+                    found = true
+                }
             }
-            if (subject.choice[i] == 'no') {
-                noChoices ++
-                console.log('no => ',noChoices);
+            if (found == false) {
+
+                answeredSubjects.push(req.params.id)
+                subject.choice.push(req.body.choice)
+                totalChoices = subject.choice.length
+                if (yesChoices !== 0) {
+                    yesChoices = 0
+                }
+                for (let i = 0; i < totalChoices; i++) {
+                    if (subject.choice[i] == 'yes') {
+                        yesChoices++
+                        // console.log('yes => ',yesChoices);
+                    }
+                    if (subject.choice[i] == 'no') {
+                        noChoices++
+                        // console.log('no => ',noChoices);
+                    }
+                }
+
+                yesPercentage = (yesChoices / totalChoices) * 100
+                noPercentage = (noChoices / totalChoices) * 100
+                subject.yesPercentage = yesPercentage
+                subject.noPercentage = noPercentage
+
+                subject.save();
+                user.save()
+
+                res.send({
+                    message: 'answer saved !',
+                    survey: subject
+                })
+                return
+
+            } else {
+                res.send({
+                    message: 'you already reacted to this survey !',
+                })
             }
+
+        } else {
+            console.log('two');
+            answeredSubjects.push(req.params.id)
+            subject.choice.push(req.body.choice)
+            totalChoices = subject.choice.length
+            if (yesChoices !== 0) {
+                yesChoices = 0
+            }
+            for (let i = 0; i < totalChoices; i++) {
+                if (subject.choice[i] == 'yes') {
+                    yesChoices++
+                    // console.log('yes => ',yesChoices);
+                }
+                if (subject.choice[i] == 'no') {
+                    noChoices++
+                    // console.log('no => ',noChoices);
+                }
+            }
+
+            yesPercentage = (yesChoices / totalChoices) * 100
+            noPercentage = (noChoices / totalChoices) * 100
+            subject.yesPercentage = yesPercentage
+            subject.noPercentage = noPercentage
+
+            subject.save();
+            user.save()
+
+            res.send({
+                message: 'answer saved !',
+                survey: subject
+            })
+
         }
-        yesPercentage = (yesChoices / totalChoices) *100
-        noPercentage = (noChoices / totalChoices) *100
-        subject.yesPercentage = yesPercentage
-        subject.noPercentage = noPercentage
         // console.log(subject);
         // console.log(yesPercentage, noPercentage);
-        console.log('ip address => ', req.ip)
-        
-        subject.save();
-        res.send(subject)
+        // console.log('ip address => ', req.ip)
     });
 });
 

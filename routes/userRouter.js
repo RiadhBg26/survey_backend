@@ -45,7 +45,7 @@ router.get('/:id', function (req, res) {
           email: user.email,
           password: user.password,
           subjects: user.subjects,
-          votes: user.votes
+          answeredSubjects: user.answeredSubjects
           // user: user.role
         });
       } else {

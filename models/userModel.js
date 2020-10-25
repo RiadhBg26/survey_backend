@@ -8,6 +8,7 @@ const UserSchema = new Schema({
     email: {type: String, unique: true, required:"Please enter a valid email !"},
     password: {type: String, required:"Please enter your password !"},
     subjects: [{type: Schema.Types.ObjectId, ref:'subject'}],
+    answeredSubjects: [{type: Schema.Types.ObjectId, ref:'subject'}]
 });
 
 //This is called a pre-hook, before the user information is saved in the database
