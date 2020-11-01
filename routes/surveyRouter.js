@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const cron = require('node-cron');
 const rateLimit = require("express-rate-limit");
-const Subject = require('../models/subjectModel');
+const Survey = require('../models/surveyModel');
 const User = require('../models/userModel');
 const { use } = require('passport');
 
 router.get('/', function (req, res) {
-    Subject.find({})
+    Survey.find({})
         .select('-__v')
-        .populate({ path: 'userId', populate: { path: 'subjects' }, model: 'user', select: '-__v' })
+        .populate({ path: 'userId', populate: { path: 'surveys' }, model: 'user', select: '-__v' })
         .exec(function (error, surveys) {
             res.send({
                 count: surveys.length,
@@ -23,41 +22,41 @@ router.get('/', function (req, res) {
 router.get('/:id', function (req, res) {
     // console.log('GET request');
     id = req.params.id;
-    Subject.findOne({ _id: id })
+    Survey.findOne({ _id: id })
         .select(' -__v')
         // .populate('specialty', {'_id ': 0})
         //   .populate({ path: 'userId', model: 'user', select: '-__v' })
-        .exec(function (err, subject) {
-            if (subject) {
-                // console.log('subject => ',subject);
+        .exec(function (err, survey) {
+            if (survey) {
+                // console.log('survey => ',survey);
                 res.status(200).send({
-                    id: subject._id,
-                    title: subject.title,
-                    description: subject.description,
-                    choices: subject.choices,
-                    yesPercentage: subject.yesPercentage,
-                    noPercentage: subject.noPercentage
+                    id: survey._id,
+                    title: survey.title,
+                    description: survey.description,
+                    choices: survey.choices,
+                    yesPercentage: survey.yesPercentage,
+                    noPercentage: survey.noPercentage
                 });
             } else {
-                res.json({ message: `No subject found with id : ${id}` })
+                res.json({ message: `No survey found with id : ${id}` })
                 //   console.log('bad');
             }
         });
 });
 
 router.post('', function (req, res) {
-    Subject.create(req.body).then(async function (subject) {
-        //console.log(subject)
-        let user = await User.findById(subject.userId)
-        // console.log("'id => ", user.subjects);
-        user.subjects.push(subject._id)
+    Survey.create(req.body).then(async function (survey) {
+        //console.log(survey)
+        let user = await User.findById(survey.userId)
+        // console.log("'id => ", user.surveys);
+        user.surveys.push(survey._id)
         await user.save()
-        subject.yesPercentage = 0
-        subject.noPercentage = 0
-        subject.save()
+        survey.yesPercentage = 0
+        survey.noPercentage = 0
+        survey.save()
         res.send({
             msg: 'survey created successfully !',
-            subject: subject
+            survey: survey
         })
     })
 })
@@ -77,32 +76,32 @@ const limiter = rateLimit({
 router.put('/:id', function (req, res) {
     var totalChoices = 0, noChoices = 0, yesChoices = 0, yesPercentage = 0, noPercentage = 0
     var found = false
-    Subject.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (subject) {
-        let user = await User.findById(subject.userId)
-        answeredSubjects = user.answeredSubjects
-        // console.log(answeredSubjects.length);
-        if (answeredSubjects.length !== 0) {
+    Survey.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (survey) {
+        let user = await User.findById(survey.userId)
+        answeredSurveys = user.answeredSurveys
+        console.log(answeredSurveys.length);
+        if (answeredSurveys.length !== 0) {
             console.log('one');
-            for (let i = 0; i < answeredSubjects.length; i++) {
-                if (answeredSubjects[i] == req.params.id) {
-                    console.log(answeredSubjects[i], req.params.id);
+            for (let i = 0; i < answeredSurveys.length; i++) {
+                if (answeredSurveys[i] == req.params.id) {
+                    console.log(answeredSurveys[i], req.params.id);
                     found = true
                 }
             }
             if (found == false) {
 
-                answeredSubjects.push(req.params.id)
-                subject.choice.push(req.body.choice)
-                totalChoices = subject.choice.length
+                answeredSurveys.push(req.params.id)
+                survey.choice.push(req.body.choice)
+                totalChoices = survey.choice.length
                 if (yesChoices !== 0) {
                     yesChoices = 0
                 }
                 for (let i = 0; i < totalChoices; i++) {
-                    if (subject.choice[i] == 'yes') {
+                    if (survey.choice[i] == 'yes') {
                         yesChoices++
                         // console.log('yes => ',yesChoices);
                     }
-                    if (subject.choice[i] == 'no') {
+                    if (survey.choice[i] == 'no') {
                         noChoices++
                         // console.log('no => ',noChoices);
                     }
@@ -110,15 +109,15 @@ router.put('/:id', function (req, res) {
 
                 yesPercentage = (yesChoices / totalChoices) * 100
                 noPercentage = (noChoices / totalChoices) * 100
-                subject.yesPercentage = yesPercentage
-                subject.noPercentage = noPercentage
+                survey.yesPercentage = yesPercentage
+                survey.noPercentage = noPercentage
 
-                subject.save();
+                Survey.save();
                 user.save()
 
                 res.send({
                     message: 'answer saved !',
-                    survey: subject
+                    survey: survey
                 })
                 return
 
@@ -130,18 +129,18 @@ router.put('/:id', function (req, res) {
 
         } else {
             console.log('two');
-            answeredSubjects.push(req.params.id)
-            subject.choice.push(req.body.choice)
-            totalChoices = subject.choice.length
+            answeredSurveys.push(req.params.id)
+            survey.choice.push(req.body.choice)
+            totalChoices = survey.choice.length
             if (yesChoices !== 0) {
                 yesChoices = 0
             }
             for (let i = 0; i < totalChoices; i++) {
-                if (subject.choice[i] == 'yes') {
+                if (survey.choice[i] == 'yes') {
                     yesChoices++
                     // console.log('yes => ',yesChoices);
                 }
-                if (subject.choice[i] == 'no') {
+                if (survey.choice[i] == 'no') {
                     noChoices++
                     // console.log('no => ',noChoices);
                 }
@@ -149,19 +148,19 @@ router.put('/:id', function (req, res) {
 
             yesPercentage = (yesChoices / totalChoices) * 100
             noPercentage = (noChoices / totalChoices) * 100
-            subject.yesPercentage = yesPercentage
-            subject.noPercentage = noPercentage
+            survey.yesPercentage = yesPercentage
+            survey.noPercentage = noPercentage
 
-            subject.save();
+            survey.save();
             user.save()
 
             res.send({
                 message: 'answer saved !',
-                survey: subject
+                survey: survey
             })
 
         }
-        // console.log(subject);
+        // console.log(survey);
         // console.log(yesPercentage, noPercentage);
         // console.log('ip address => ', req.ip)
     });
@@ -170,8 +169,8 @@ router.put('/:id', function (req, res) {
 
 
 router.delete('/:id', function (req, res) {
-    Subject.findByIdAndDelete({ _id: req.params.id }, req.body).then(function (subject) {
-        res.send(subject);
+    Survey.findByIdAndDelete({ _id: req.params.id }).then(function (survey) {
+        res.send(survey);
     });
 });
 
