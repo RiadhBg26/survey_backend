@@ -8,7 +8,7 @@ const { use } = require('passport');
 router.get('/', function (req, res) {
     Survey.find({})
         .select('-__v')
-        .populate({ path: 'userId', populate: { path: 'surveys' }, model: 'user', select: '-__v' })
+        .populate({ path: 'userId', model: 'user', select: '-__v' })
         .exec(function (error, surveys) {
             res.send({
                 count: surveys.length,
@@ -78,6 +78,7 @@ router.put('/:id', function (req, res) {
     var found = false
     Survey.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (survey) {
         let user = await User.findById(survey.userId)
+        console.log('id => ',user);
         answeredSurveys = user.answeredSurveys
         console.log(answeredSurveys.length);
         if (answeredSurveys.length !== 0) {
@@ -112,7 +113,7 @@ router.put('/:id', function (req, res) {
                 survey.yesPercentage = yesPercentage
                 survey.noPercentage = noPercentage
 
-                Survey.save();
+                survey.save();
                 user.save()
 
                 res.send({

@@ -27,7 +27,6 @@ passport.use('jwt', new JwtStrategy({
 passport.use('local', new LocalStrategy({
     usernameField: 'email'
 }, async function (email, password, done) {
-    console.log('here');
     try {
 
         const user = await User.findOne({ email });
