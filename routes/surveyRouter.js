@@ -48,7 +48,7 @@ router.post('', function (req, res) {
     Survey.create(req.body).then(async function (survey) {
         //console.log(survey)
         let user = await User.findById(survey.userId)
-        // console.log("'id => ", user.surveys);
+        console.log("'id => ", user);
         user.surveys.push(survey._id)
         await user.save()
         survey.yesPercentage = 0

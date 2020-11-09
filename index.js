@@ -25,7 +25,7 @@ app.use(cors({
     allowedHeaders: 'Content-Type, Authorization, Origin, X-Requested-With, Accept, jwt'
 }));
 
-app.use(morgan('dev'))
+// app.use(morgan('dev'))
 app.use(bodyParser.json(), bodyParser.urlencoded({extended: false}))
 passport.initialize(),
 passport.session()
@@ -36,3 +36,5 @@ app.use('/api/surveys', surveyRoutes)
 app.listen(process.env.port || 3000, function() {
     console.log('listening to port 3000...');
 })
+
+//   "C:\Program Files\MongoDB\Server\4.2\bin\mongod.exe" --dbpath="c:\data\db"

@@ -2,19 +2,14 @@ const express = require('express')
 const router = express.Router()
 const User = require('../models/userModel')
 const Jwt = require('jsonwebtoken')
+const randtoken = require('rand-token');
 const passport = require('passport')
 const passportConfig = require('../controllers/passport')
 
-signToken = (user) => {
-    return Jwt.sign({
-        iss: user,
-        sub: user._id, //what to assign the token to(should be something constant and id is the ideal subject)
-        iat: new Date().getTime(), //when the token was signed(optional)
-        exp: Math.floor(Date.now() / 1000) + (60 * 60),
-        // exp: new Date().setDate(new Date().getDate() + 1) //expirs one day later(current time + 1 day ahead)
-    }, 'secret_key' )
-}
+const SECRET = 'secret_key'
+const refreshTokens = {};
 
+//signup user
 router.post('/signup', async function (req, res, next) {
   const { email, password } = req.body
   if (!email) {
@@ -29,6 +24,7 @@ router.post('/signup', async function (req, res, next) {
   }
   const existingUser = await User.findOne({ email })
   if (existingUser) {
+    console.log('user exists');
     return res.status(403).json({
       error: 'email already exists in database'
     });
@@ -45,43 +41,83 @@ router.post('/signup', async function (req, res, next) {
   await newUser.save().then(function (user) {
     res.json({
       message: 'user created successfully!',
-      user: newUser,
+      user: user,
       // token: token
     });
   });
 });
 
+//login user
 router.post('/login', passport.authenticate('local', { session: false }), async function (req, res, next) {
-  //generate a token on login
-  const token = signToken(req.user)
-  console.log(token);
+  console.log('logged in');
+  const user = {user: req.user}
+  //generate token
+  const token = Jwt.sign(user, SECRET, { expiresIn: 600 })
+  const refreshToken = randtoken.uid(256);
+  refreshTokens[refreshToken] = user;
   res.json({
     message: 'logged in',
-    userId: req.user.id,
+    userId: req.user._id,
     token: token,
-  })
-  console.log('logged in');
+    refreshToken: refreshToken
+  });
 });
 
+// refresh token
+router.post('/refresh', async function (req, res, next) {
+  try {    
+    const refreshToken = req.body.refreshToken;
+    const foundUser = await User.findById({_id: req.body.id});
+    if (!foundUser) {
+      console.log('user not found');
+      delete refreshTokens[refreshToken];
+      return res.json({error:'0'})
+      
+    } else if(refreshToken in refreshTokens) {
+      const user = { user: refreshTokens[refreshToken] }
+      const token = Jwt.sign(user, SECRET, { expiresIn: 600  });
+      console.log('token refreshed');
+      return res.json({ token: token})
+      
+    } 
+    else {
+      console.log('status 401');
+      
+      return res.sendStatus(401);
+    }
+  } catch (error) {
+    // console.log(error);
+    next(error)
+  }
+});
 // access to secured route with token
 router.get('/securedpage', verifyToken, function (req, res, next) {
-  return res.status(200).json(decodedToken.iss);
+  console.log('secured route');
+  console.log('new token expires in : ', new Date(decodedToken.exp * 1000));
+  return res.status(200).json({
+    user: decodedToken.user,
+    message: 'welcome to secured app'
+  });
 })
 
+//verify token
 var decodedToken = '';
 async function verifyToken(req, res, next) {
   let token = await req.query.token;
   Jwt.verify(token, 'secret_key', function (err, tokendata) {
-    if (err) {
-      console.log(err);
-      return res.status(400).json({ message: ' Unauthorized request', error: err });
+    if (err && token) {
+      return res.status(401).json({ message: ' Unauthorized request', error: err });
     }
     if (tokendata) {
       decodedToken = tokendata;
+      // console.log('decoded token => ', decodedToken);
       next();
     }
   })
 }
+
+
+
 
 //redirect to profile
 router.get('/secret', passport.authenticate('jwt', { session: false }), async function (req, res, next) {
@@ -91,6 +127,17 @@ router.get('/secret', passport.authenticate('jwt', { session: false }), async fu
   })
 })
 
+
+router.post('/logout', function (req, res) { 
+  console.log('logout route');
+  const refreshToken = req.body.refreshToken;
+  if (refreshToken in refreshTokens) { 
+    delete refreshTokens[refreshToken];
+    console.log('loggoed out');
+    delete req.user
+  } 
+  res.sendStatus(204); 
+});
 //____________________________Get all users __________________________
 router.get('/', function (req, res) {
   // console.log('GET request');
@@ -144,3 +191,7 @@ router.get('/:id', function (req, res) {
 //___________
 
 module.exports = router
+
+
+
+
