@@ -4,6 +4,8 @@ const rateLimit = require("express-rate-limit");
 const Survey = require('../models/surveyModel');
 const User = require('../models/userModel');
 const { use } = require('passport');
+const user = require('../models/userModel');
+const { findOneAndRemove } = require('../models/userModel');
 
 router.get('/', function (req, res) {
     Survey.find({})
@@ -44,21 +46,28 @@ router.get('/:id', function (req, res) {
         });
 });
 
-router.post('', function (req, res) {
-    Survey.create(req.body).then(async function (survey) {
-        //console.log(survey)
-        let user = await User.findById(survey.userId)
-        console.log("'id => ", user);
-        user.surveys.push(survey._id)
-        await user.save()
-        survey.yesPercentage = 0
-        survey.noPercentage = 0
-        survey.save()
-        res.send({
-            msg: 'survey created successfully !',
-            survey: survey
+router.post('', function (req, res, next) {
+    let user = ''
+    try {
+        Survey.create(req.body).then(async function (survey) {
+            //console.log(survey)
+            user = await User.findById(survey.userId)
+            // console.log("'id => ", user);
+            user.local.surveys.push(survey._id)
+            user.google.surveys.push(survey._id)
+            user.facebook.surveys.push(survey._id)
+            await user.save()
+            survey.yesPercentage = 0
+            survey.noPercentage = 0
+            survey.save()
+            res.send({
+                msg: 'survey created successfully !',
+                survey: survey
+            })
         })
-    })
+    } catch (error) {
+        return next(error)
+    }
 })
 
 
@@ -78,14 +87,14 @@ router.put('/:id', function (req, res) {
     var found = false
     Survey.findByIdAndUpdate({ _id: req.params.id }, req.body.choice).then(async function (survey) {
         let user = await User.findById(survey.userId)
-        console.log('id => ',user);
-        answeredSurveys = user.answeredSurveys
+        // console.log('id => ',user);
+        answeredSurveys = user.local.answeredSurveys
         console.log(answeredSurveys.length);
         if (answeredSurveys.length !== 0) {
-            console.log('one');
+            // console.log('one');
             for (let i = 0; i < answeredSurveys.length; i++) {
                 if (answeredSurveys[i] == req.params.id) {
-                    console.log(answeredSurveys[i], req.params.id);
+                    // console.log(answeredSurveys[i], req.params.id);
                     found = true
                 }
             }
@@ -129,7 +138,7 @@ router.put('/:id', function (req, res) {
             }
 
         } else {
-            console.log('two');
+            // console.log('two');
             answeredSurveys.push(req.params.id)
             survey.choice.push(req.body.choice)
             totalChoices = survey.choice.length
@@ -170,8 +179,12 @@ router.put('/:id', function (req, res) {
 
 
 router.delete('/:id', function (req, res) {
-    Survey.findByIdAndDelete({ _id: req.params.id }).then(function (survey) {
-        res.send(survey);
+    Survey.findByIdAndDelete({ _id: req.params.id }).then(async function (data) {
+        let user = await User.findById(data.userId)
+        let surveys = user.local.surveys
+        Survey.findByIdAndDelete(surveys[0])
+        
+        res.send(data)
     });
 });
 

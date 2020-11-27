@@ -1,8 +1,9 @@
 const redis = require('redis')
 
 const client = redis.createClient({
-  port: 3000,
+  port: 6379,
   host: '127.0.0.1',
+  // if host and port aren't defined createClient() will automatically connect to (port: 6379, host: '127.0.0.1')
 })
 
 client.on('connect', () => {
