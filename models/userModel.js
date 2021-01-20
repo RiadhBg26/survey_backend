@@ -14,6 +14,9 @@ const UserSchema = new Schema({
       password: {type: String},
       surveys: [{ type: Schema.Types.ObjectId, ref: 'survey' }],
       answeredSurveys: [{ type: Schema.Types.ObjectId, ref: 'survey' }],
+      active: {type: Boolean, default: false},
+      temporaryToken: {type: String},
+      resetToken: {type: String, default:''}
     },
     google: {
       id: {type: String},
@@ -32,7 +35,6 @@ const UserSchema = new Schema({
 
 UserSchema.pre('save', async function (next) {
     try {
-        console.log('entered');
         if (!this.methods.includes('local')) {
           next();
         }

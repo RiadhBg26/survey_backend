@@ -34,23 +34,23 @@ passport.serializeUser(function (user, done) {
 
 //login with passport-local-strategy
 passport.use('local', new LocalStrategy({
-
     usernameField: 'email'
 }, async function (email, password, done) {
     try {
         const user = await User.findOne({ 'local.email': email });
-        console.log(user);
         if (!user) {
-            console.log('user doesent exist');
-            return done(null, false, { error: 'user not found in db' })
+            console.log('user does not exist');
+            return done(null, false, { error: 'user not found in db' });
         }
-
         const validate = await user.isValidPassword(password)
         if (!validate) {
-            console.log('no match', validate);
-            return done(null, false, { error: 'passwords dont match' })
+            // console.log('no match', validate);
+            return done(null, false, { error: 'passwords dont match' });
         }
-        return done(null, user, { message: `user with email ${user.email} logged in successfully` })
+        if (user.local.active === false) {
+            return done(null, false, { error: 'account is not yet activated!' })
+        }
+        return done(null, user, { success: `logged in successfully` })
 
     } catch (error) {
         return done(error, false)

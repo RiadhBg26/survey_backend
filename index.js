@@ -28,9 +28,10 @@ app.use(cors({
 }));
 
 // app.use(morgan('dev'))
-app.use(bodyParser.json(), bodyParser.urlencoded({extended: false}))
-passport.initialize(),
-passport.session()
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(passport.initialize());
+app.use(passport.session())
 
 app.use('/api/users', userRoutes)
 app.use('/api/surveys', surveyRoutes)

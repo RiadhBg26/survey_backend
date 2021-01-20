@@ -3,9 +3,7 @@ const router = express.Router();
 const rateLimit = require("express-rate-limit");
 const Survey = require('../models/surveyModel');
 const User = require('../models/userModel');
-const { use } = require('passport');
-const user = require('../models/userModel');
-const { findOneAndRemove } = require('../models/userModel');
+
 
 router.get('/', function (req, res) {
     Survey.find({})
@@ -21,7 +19,7 @@ router.get('/', function (req, res) {
 
 //____________________________Get single Expert __________________________
 
-router.get('/:id', function (req, res) {
+router.get('/:id',  function (req, res) {
     // console.log('GET request');
     id = req.params.id;
     Survey.findOne({ _id: id })
@@ -47,11 +45,10 @@ router.get('/:id', function (req, res) {
 });
 
 router.post('', function (req, res, next) {
-    let user = ''
     try {
         Survey.create(req.body).then(async function (survey) {
             //console.log(survey)
-            user = await User.findById(survey.userId)
+            const user = await User.findById(survey.userId)
             // console.log("'id => ", user);
             user.local.surveys.push(survey._id)
             user.google.surveys.push(survey._id)
